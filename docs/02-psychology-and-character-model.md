@@ -12,11 +12,11 @@ $$\mathbf{P} = \langle O, C, E, A, N \rangle$$
 
 ```
 [-1.0] ────────────────────────────────────────── [0.0] ────────────────────────────────────────── [+1.0]
-Traditional, routine                 Openness (O)                         Curious, experimental
-Disorganized, careless             Conscientiousness (C)                  Disciplined, meticulous
-Reserved, solitary                   Extraversion (E)                     Sociable, outgoing
-Hostile, cynical, suspicious          Agreeableness (A)                    Empathetic, altruistic, trusting
-Calm, stress-resilient               Neuroticism (N)                      Anxious, moody, volatile
+Traditional, routine                 (O) Openness                          Curious, experimental
+Disorganized, careless               (C) Conscientiousness                 Disciplined, meticulous
+Reserved, solitary                   (E) Extraversion                      Sociable, outgoing
+Hostile, cynical, suspicious         (A) Agreeableness                     Empathetic, altruistic, trusting
+Calm, stress-resilient               (N) Neuroticism                       Anxious, moody, volatile
 ```
 
 ### Dual Impact (Simulation vs. Language Generation):
