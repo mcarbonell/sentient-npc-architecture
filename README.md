@@ -5,6 +5,14 @@
 
 ---
 
+<p align="center">
+  <img src="docs/assets/concept_mockup.jpg" alt="SNA 2D Prototype Visual Concept" width="100%" />
+  <br>
+  <em><b>Visual Concept Mockup:</b> Target design for the 2D Village Prototype (MVP), illustrating systemic routines, real-time generative dialogue barks, and live psychological telemetry inspection (Needs, PAD space).<br><sub>⚠️ Note: Illustrative design mockup, not an in-engine screenshot.</sub></em>
+</p>
+
+---
+
 ## 🧭 Vision & Design Philosophy
 
 Modern video games are largely split into two disjoint paradigms:

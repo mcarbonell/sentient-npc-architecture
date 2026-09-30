@@ -24,6 +24,12 @@ A compact rural settlement featuring 4 functional Points of Interest (POIs):
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
+<p align="center">
+  <img src="assets/concept_mockup.jpg" alt="Visual Concept Mockup" width="100%" />
+  <br>
+  <em><b>Visual Concept Mockup:</b> Target aesthetic for the 2D prototype illustrating the village layout, overhead generative dialogue barks, and real-time telemetry inspector (conceptual illustration, not an in-engine screenshot).</em>
+</p>
+
 ### The 5 Experimental Inhabitants:
 1. **Matthew (The Tavernkeeper):** Married to Elena. Traits: *Spiteful, Jealous*. Runs the tavern during evenings; sleeps at the shared home.
 2. **Elena (The Healer / Herbalist):** Married to Matthew. Traits: *Sociable, Empathetic*. Gathers herbs by day; visits the tavern at dusk.
