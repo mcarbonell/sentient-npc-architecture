@@ -1,107 +1,108 @@
-# 01. Arquitectura del Sistema: El Modelo del "Cerebro Triuno"
+# 01. System Architecture: The "Triune Brain" Model
 
-Este documento describe la arquitectura global de software de **Sentient NPC Architecture (SNA)**, estructurada para desacoplar el rendimiento en tiempo real del motor del juego (60 FPS) de la inferencia de lenguaje natural y la cognición reflexiva.
+This document outlines the software architecture of **Sentient NPC Architecture (SNA)**, structured to decouple real-time game engine performance (60 FPS) from natural language inference and reflective cognition.
 
 ---
 
-## 1. El Problema del Cuello de Botella en la IA de Videojuegos
+## 1. The Bottleneck in Video Game AI
 
-En un videojuego tradicional, cada NPC consume un presupuesto estricto de CPU (habitualmente **< 0.1 milisegundos por frame** para toda la lógica de IA en títulos con cientos de entidades).
+In conventional game development, each NPC operates within a rigid CPU budget (typically **< 0.1 milliseconds per frame** across all AI logic in titles featuring hundreds of active entities).
 
-Los Modelos de Lenguaje (LLMs), incluso los más pequeños (0.5B - 3B), tienen latencias de inferencia de entre **20 ms y 500 ms** por petición. Si el bucle de actualización del juego (`Update()`) invocase directamente un modelo de lenguaje, el juego sufriría una congelación de fotogramas masiva (*stuttering* catastrófico).
+Language models (LLMs/SLMs), even lightweight variants (0.5B – 3B parameters), incur inference latencies ranging from **20 ms to 500 ms** per call. If the primary game update loop (`Update()`) were to invoke a language model synchronously, the game would experience catastrophic frame drops and severe hitching.
 
-### La Solución de SNA: Desacoplamiento Temporal Jerárquico
-La mente del NPC se divide en tres subsistemas concurrentes con frecuencias de actualización independientes por órdenes de magnitud:
+### SNA Solution: Hierarchical Temporal Decoupling
+
+The NPC cognitive stack is segregated into three concurrent subsystems with tick frequencies separated by orders of magnitude:
 
 ```
 +-------------------------------------------------------------------------+
-|                  NIVEL 3: COGNITIVO / GENERATIVO                        |
-|  * Frecuencia: Basada en eventos (0.01 - 0.1 Hz) / 10s - 100s          |
-|  * Tecnologías: SLM Local (GGUF / ONNX), Embeddings, RAG                |
-|  * Responsabilidades: Diálogo, reflexión, cambios de opinión, metas     |
+|                    TIER 3: COGNITIVE / GENERATIVE                       |
+|  * Frequency: Event-Driven (0.01 - 0.1 Hz) / 10s - 100s                 |
+|  * Technologies: Local SLM (GGUF / ONNX), Embeddings, RAG               |
+|  * Responsibilities: Dialogue, reflection, opinion shifts, high goals   |
 +-------------------------------------------------------------------------+
-                                    ▲  │ (Intenciones / Decisiones mayores)
-       (Estímulos / Hechos clave)   │  ▼
+                                    ▲  │ (Intents / High-level decisions)
+       (Key stimuli / Event logs)   │  ▼
 +-------------------------------------------------------------------------+
-|                  NIVEL 2: EJECUTIVO / ESPACIAL                          |
-|  * Frecuencia: Regular / Táctico (0.5 - 2 Hz) / 0.5s - 2s               |
-|  * Tecnologías: Planificador GOAP, Optimizador TSP, HPA* Navigation     |
-|  * Responsabilidades: Resolver rutas, itinerario del día, inventario   |
+|                    TIER 2: EXECUTIVE / SPATIAL                          |
+|  * Frequency: Regular / Tactical (0.5 - 2 Hz) / 0.5s - 2s               |
+|  * Technologies: GOAP Planner, TSP Optimizer, HPA* Navigation           |
+|  * Responsibilities: Route resolution, daily itinerary, inventory       |
 +-------------------------------------------------------------------------+
-                                    ▲  │ (Acciones atómicas / Destinos)
-       (Colisiones / Pánico)        │  ▼
+                                    ▲  │ (Atomic actions / Destinations)
+       (Collisions / Panic triggers)│  ▼
 +-------------------------------------------------------------------------+
-|                  NIVEL 1: FISIOLÓGICO / REACTIVO                        |
-|  * Frecuencia: Tiempo Real (30 - 60 Hz) / 16.6ms                        |
-|  * Tecnologías: ECS (Data-Oriented), Utility AI Curves, Sensores        |
-|  * Responsabilidades: Hambre, energía, evasión, animación, sobresalto   |
+|                    TIER 1: PHYSIOLOGICAL / REACTIVE                     |
+|  * Frequency: Real-Time (30 - 60 Hz) / 16.6ms                           |
+|  * Technologies: ECS (Data-Oriented), Utility AI Curves, Sensors        |
+|  * Responsibilities: Hunger, energy, evasion, animation, flinching      |
 +-------------------------------------------------------------------------+
 ```
 
 ---
 
-## 2. Desglose de Capas
+## 2. Layer Breakdown
 
-### Capa 1: Sistema Fisiológico y Reactivo (*Fast Tick - 60 FPS*)
-* **Arquitectura:** Basado en componentes puros orientados a datos (**ECS - Entity Component System**). Los datos de miles de NPCs residen contiguos en memoria caché L1/L2.
-* **Componentes clave:**
-  * `NeedsComponent`: Struct con enteros de 8 bits para cada necesidad (`hunger`, `thirst`, `energy`, `social`, `fun`, `bladder`).
-  * `EmotionalStateComponent`: Vector 3D en espacio PAD (*Pleasure, Arousal, Dominance*).
-  * `PerceptionSensorComponent`: Cono de visión y radio de audición simplificado (broadphase espacial con BVH o Spatial Hash Grid).
-  * `ReactiveReflexComponent`: Interrupciones inmediatas (ej. esquivar proyectiles, huir ante fuego o caída de rocas).
-* **Mecanismo de Selección de Acción:** **Utility AI**. Cada necesidad evalúa una curva matemática de respuesta no lineal (curvas sigmoidales o de potencias). La acción fisiológica más urgente gana la ejecución motora inmediata sin consultar a ninguna otra capa.
+### Layer 1: Physiological and Reactive System (*Fast Tick - 60 FPS*)
+* **Architecture:** Built on a pure data-oriented **ECS (Entity Component System)** design. Data for hundreds of NPCs is kept contiguous in L1/L2 CPU cache.
+* **Core Components:**
+  * `NeedsComponent`: Struct of 8-bit unsigned integers representing internal drives (`hunger`, `thirst`, `energy`, `social`, `fun`, `bladder`).
+  * `EmotionalStateComponent`: Continuous 3D vector in PAD space (*Pleasure, Arousal, Dominance*).
+  * `PerceptionSensorComponent`: Vision cone and hearing radius with spatial partitioning acceleration (BVH or Spatial Hash Grid).
+  * `ReactiveReflexComponent`: Zero-latency reflex interrupts (e.g., projectile dodging, fleeing fire, avoiding falling debris).
+* **Action Selection Mechanism:** **Utility AI**. Each biological drive evaluates a non-linear response curve (sigmoid or exponential curves). The most urgent drive wins motor execution immediately without querying higher layers.
 
-### Capa 2: Sistema Ejecutivo y Espacial (*Tactical Tick - 1 Hz*)
-* **Arquitectura:** Bucle de planificación ejecutado cada 1 a 2 segundos en un hilo secundario de simulación (*Simulation Worker Thread*).
-* **Componentes clave:**
-  * `ScheduleComponent`: Agenda horaria flexible (ej. 08:00 Desayunar, 09:00 Cosechar trigo, 14:00 Vender en mercado).
-  * `TaskSequenceOptimizer (TSP)`: Optimizador de tareas dispersas que reduce la distancia recorrida en la jornada mediante heurísticas *2-opt* sobre grafos de Puntos de Interés (POI).
-  * `MacroNavigation`: Planificación jerárquica de rutas mediante HPA* (*Hierarchical Pathfinding*).
+### Layer 2: Executive and Spatial System (*Tactical Tick - 1 Hz*)
+* **Architecture:** Planning cycle executed every 1 to 2 seconds on a dedicated *Simulation Worker Thread*.
+* **Core Components:**
+  * `ScheduleComponent`: Flexible circadian timetable (e.g., 08:00 Breakfast, 09:00 Harvest wheat, 14:00 Trade at market).
+  * `TaskSequenceOptimizer (TSP)`: Errands optimizer that minimizes travel distance across the day using *2-opt* heuristics over Point of Interest (POI) graphs.
+  * `MacroNavigation`: Hierarchical route planning using HPA* (*Hierarchical Pathfinding*).
 
-### Capa 3: Sistema Cognitivo y Generativo (*Slow / Event-Driven Tick*)
-* **Arquitectura:** Totalmente asíncrono con cola de prioridad (*Priority Task Queue*) atendida por un hilo dedicado de inferencia de IA (*Inference Worker Thread*).
-* **Desencadenantes (*Triggers*):**
-  1. **Interacción con el jugador:** El jugador inicia una conversación o comete un delito presenciado por el NPC.
-  2. **Intercambio social espontáneo:** Dos NPCs con alta afinidad o conflicto coinciden en un mismo nodo social (taberna, banco de plaza).
-  3. **Eventos de quiebre emocional (*Mental Break Trigger*):** El vector de necesidades o estrés supera un umbral crítico (estilo *RimWorld*).
-  4. **Fase de Consolidación Nocturna:** Durante el sueño, se procesa la memoria del día.
-* **Salida de la Capa:** Nunca genera comandos directos de bajo nivel. Genera **intenciones semánticas en JSON validado** que la Capa Ejecutiva y Reactiva traducen a estados del juego.
+### Layer 3: Cognitive and Generative System (*Slow / Event-Driven Tick*)
+* **Architecture:** Fully asynchronous priority queue serviced by an *Inference Worker Thread*.
+* **Triggers:**
+  1. **Player Interaction:** Player initiates a dialogue or commits a visible crime.
+  2. **Spontaneous Social Exchange:** Two NPCs with high social affinity or intense rivalry encounter each other at an interaction node (tavern, market bench).
+  3. **Mental Break Triggers:** Stress or need vectors breach a critical threshold (*RimWorld*-style breakdown).
+  4. **Nightly Consolidation Phase:** Sleep cycle activates day-to-night memory synthesis.
+* **Output:** The layer never issues raw motor commands. It emits **schema-validated JSON semantic intents**, which Layers 2 and 1 translate into physical game states.
 
 ---
 
-## 3. Modelo de Hilos y Concurrencia
+## 3. Threading and Concurrency Model
 
-Para garantizar cero caídas de frames en el renderizado del juego, los hilos se segregan de la siguiente manera:
+To guarantee zero frame drops on the main rendering loop, thread responsibilities are segregated:
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Render as Hilo Principal / Render (60 FPS)
-    participant Sim as Hilo de Simulación (ECS / 30-60 FPS)
-    participant Exec as Hilo Ejecutivo (Agenda / TSP / 1 FPS)
-    participant AI as Hilo de Inferencia SLM (Asíncrono)
+    participant Render as Main Thread / Render (60 FPS)
+    participant Sim as Simulation Thread (ECS / 30-60 FPS)
+    participant Exec as Executive Thread (Agenda / TSP / 1 FPS)
+    participant AI as SLM Inference Thread (Async)
 
-    Render->>Sim: Sincroniza transformaciones visuales
-    Sim->>Sim: Actualiza vectores de necesidades y colisiones
-    Exec->>Sim: Envía siguiente acción atómica de la agenda
-    Note over Sim,Exec: Dos NPCs se cruzan con alta tensión social
-    Sim->>AI: Encola solicitud de diálogo (Prioridad Media)
-    Sim->>Render: Mantiene animación de espera / miradas hostiles
-    AI->>AI: Ejecuta inferencia SLM en segundo plano (120ms)
-    AI-->>Sim: Retorna JSON con líneas de diálogo y cambio de humor
-    Sim->>Render: Desencadena audio TTS y animación de hablar
+    Render->>Sim: Sync visual transforms
+    Sim->>Sim: Update needs vectors and broadphase collisions
+    Exec->>Sim: Dispatch next atomic agenda action
+    Note over Sim,Exec: Two NPCs cross paths under high social tension
+    Sim->>AI: Enqueue dialogue request (Priority: Medium)
+    Sim->>Render: Maintain idle/hostile stare animation
+    AI->>AI: Execute SLM inference in background (120ms)
+    AI-->>Sim: Return validated JSON with dialogue lines & mood delta
+    Sim->>Render: Trigger TTS audio and facial speech anim
 ```
 
 ---
 
-## 4. Bus de Eventos y Pizarra (*Blackboard Architecture*)
+## 4. Blackboard Architecture and Event Bus
 
-Cada NPC posee una **Pizarra Individual (*Local Blackboard*)** y acceso de solo lectura a la **Pizarra de Zona (*World Blackboard*)**.
+Each NPC maintains a **Local Blackboard** with read-only query access to the **World Blackboard**.
 
-### Estructura de la Pizarra Individual
+### Local Blackboard Structure
 ```json
 {
-  "npc_id": "mateo_tabernero_01",
+  "npc_id": "matthew_tavernkeeper_01",
   "current_lod": 0,
   "needs": {
     "hunger": 42,
@@ -111,7 +112,7 @@ Cada NPC posee una **Pizarra Individual (*Local Blackboard*)** y acceso de solo 
   },
   "current_intent": {
     "action": "confront_rival",
-    "target_id": "bruno_herrero_02",
+    "target_id": "bruno_blacksmith_02",
     "priority": 80,
     "timeout": 45.0
   },
@@ -120,14 +121,14 @@ Cada NPC posee una **Pizarra Individual (*Local Blackboard*)** y acceso de solo 
 }
 ```
 
-### Regla de Comunicación entre Capas:
-1. **Descendente (Cerebro Lento $\to$ Cerebro Rápido):** La Capa Cognitiva escribe una *Intención* en la Pizarra. La Capa Ejecutiva la divide en acciones atómicas. La Capa Reactiva las ejecuta físicamente.
-2. **Ascendente (Cerebro Rápido $\to$ Cerebro Lento):** La Capa Reactiva o de Sensores detecta un evento anómalo (ej. un robo o un insulto) y deposita un `ObservationEvent` en el búfer de entrada de la Capa Cognitiva.
+### Inter-Layer Communication Rules:
+1. **Top-Down (Slow Brain $\to$ Fast Brain):** The Cognitive Layer writes an *Intent* to the Blackboard. The Executive Layer breaks it down into atomic waypoints and tasks. The Reactive Layer executes physics and locomotion.
+2. **Bottom-Up (Fast Brain $\to$ Slow Brain):** When perception detects an anomalous event (theft, assault, insult), an `ObservationEvent` is dispatched to the Cognitive Layer's input buffer.
 
 ---
 
-## 5. Resumen de Tolerancia a Fallos y Fallbacks
+## 5. Fault Tolerance and Graceful Degradation
 
-Si el sistema de lenguaje local sufre una sobrecarga o latencia excesiva:
-* **Fallback a Líneas Arquetípicas (*Fallback Bark System*):** Si la cola del SLM supera un tiempo límite de espera (ej. > 800 ms para un diálogo de saludo), el NPC recurre a un banco clásico de líneas de voz prefijadas según su arquetipo de personalidad, sin bloquear nunca la partida.
-* **Degradación Elegante:** Bajo estrés de CPU, los ticks de la Capa Ejecutiva se espacian dinámicamente de 1 Hz a 0.2 Hz (1 tick cada 5 segundos para NPCs lejanos).
+If the local SLM experiences resource contention or latency spikes:
+* **Fallback Bark System:** If the inference queue exceeds a latency threshold (e.g., > 800 ms for an interactive greeting), the NPC seamlessly defaults to an archetypal voice-bark table matching their personality matrix, preventing gameplay stalls.
+* **Dynamic Throttling:** Under heavy CPU load, Executive Layer tick rates throttle smoothly from 1 Hz down to 0.2 Hz (one tick every 5 seconds for distant NPCs).

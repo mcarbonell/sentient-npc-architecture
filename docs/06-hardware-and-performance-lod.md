@@ -1,74 +1,74 @@
-# 06. Rendimiento, LOD Conductual y Ejecución en Hardware
+# 06. Hardware, Performance, and Behavioral LOD
 
-Este documento describe la estrategia de optimización para permitir la simulación concurrente de **cientos o miles de NPCs inteligentes** en hardware de consumo contemporáneo (PCs de gama media, consolas y portátiles) sin comprometer la fluidez de fotogramas (60 FPS estables) ni saturar la memoria RAM o VRAM.
+This document describes the optimization architecture enabling concurrent simulation of **hundreds to thousands of intelligent NPCs** on consumer hardware (mid-tier gaming PCs, modern consoles, and APU laptops) while maintaining locked 60 FPS performance without memory saturation.
 
 ---
 
-## 1. El Concepto de LOD Conductual (*Behavioral Level of Detail*)
+## 1. The Concept of Behavioral Level of Detail (Behavioral LOD)
 
-De la misma forma que un motor gráfico reduce los polígonos de una malla 3D cuando un objeto se aleja de la cámara, **SNA reduce la fidelidad matemática y cognitiva de los NPCs según su relevancia para el jugador**:
+Just as rendering pipelines downgrade polygon counts as geometry recedes from the viewport, **SNA scales the mathematical and cognitive fidelity of NPCs based on player proximity and relevance**:
 
 ```
-                       [CÁMARA DEL JUGADOR]
+                       [PLAYER VIEWPORT]
                                 │
-    < 20 metros                 ▼                   LOD 0: Alta Fidelidad
+    < 20 meters                 ▼                   LOD 0: High Fidelity
  ┌────────────────────────────────────────────────────────────────────────┐
- │ * Modelo 3D completo, IK, animaciones faciales y sincronización labial │
- │ * Inferencia SLM en tiempo real para diálogos dinámicos                │
- │ * Sensores visuales/auditivos continuos (30-60 FPS)                    │
+ │ * Full 3D model, inverse kinematics (IK), facial blendshapes, lip-sync │
+ │ * Real-time SLM inference for generative dynamic dialogue              │
+ │ * Continuous vision/hearing perception updates (30-60 FPS)             │
  └────────────────────────────────────────────────────────────────────────┘
                                 │
-    20 - 100 metros             ▼                   LOD 1: Fidelidad Media
+    20 - 100 meters             ▼                   LOD 1: Medium Fidelity
  ┌────────────────────────────────────────────────────────────────────────┐
- │ * Animaciones simplificadas, sin IK facial ni sincronización labial    │
- │ * Sin LLM: Diálogos mediante "Barks" arquetípicos y bancos de frases   │
- │ * Utility AI y navegación NavMesh estándar (1 - 2 FPS / ticks)         │
+ │ * Simplified skeletal animation; facial IK disabled                    │
+ │ * No LLM: Interactions use archetypal barks & pre-authored voice banks │
+ │ * Standard Utility AI and coarse NavMesh navigation (1 - 2 FPS ticks)  │
  └────────────────────────────────────────────────────────────────────────┘
                                 │
-    > 100 metros (Fuera de vista) ▼                 LOD 2: Simulación Abstracta
+    > 100 meters (Off-screen)   ▼                   LOD 2: Abstract Simulation
  ┌────────────────────────────────────────────────────────────────────────┐
- │ * Sin entidades 3D, sin física, sin mallas de colisión                 │
- │ * Movimiento puramente matemático interpolado sobre el grafo de POIs   │
- │ * Ticks discretos cada 30-60 segundos (evaluación estadística de datos)│
+ │ * No 3D meshes, no skeletal physics, no spatial collision meshes       │
+ │ * Purely algebraic transit interpolated across the POI graph           │
+ │ * Discrete coarse ticks every 30 - 60 seconds (statistical evaluation) │
  └────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Tabla Comparativa de Recursos por Nivel de Detalle:
+### Resource Allocation Across Detail Tiers:
 
-| Nivel de Detalle | Población Típica | Consumo de CPU por NPC | Uso de Memoria por NPC | Inferencia SLM |
+| Detail Tier | Typical Population | CPU Time per NPC | Memory Footprint per NPC | SLM Inference |
 | :--- | :---: | :---: | :---: | :---: |
-| **LOD 0** | 3 – 8 NPCs | $\approx 0.15\text{ ms}$ | $50\text{ KB}$ (RAM) + Malla 3D | Activa (Prioridad Máxima) |
-| **LOD 1** | 20 – 50 NPCs | $\approx 0.02\text{ ms}$ | $20\text{ KB}$ (RAM) | Desactivada (Salvo eventos excepcionales) |
-| **LOD 2** | 300 – 1.000+ NPCs | $\approx 0.001\text{ ms}$ | $2\text{ KB}$ (Solo structs numéricos) | Totalmente Desactivada |
+| **LOD 0** | 3 – 8 NPCs | $\approx 0.15\text{ ms}$ | $50\text{ KB}$ (RAM) + 3D Asset | Active (Top Priority) |
+| **LOD 1** | 20 – 50 NPCs | $\approx 0.02\text{ ms}$ | $20\text{ KB}$ (RAM) | Disabled (Except scripted alerts) |
+| **LOD 2** | 300 – 1,000+ NPCs | $\approx 0.001\text{ ms}$ | $2\text{ KB}$ (Numeric structs only) | Fully Deactivated |
 
 ---
 
-## 2. Presupuesto de CPU para un Poblado de 500 NPCs
+## 2. CPU Frame Budget for a 500-NPC Town
 
-Gracias al Behavioral LOD, el coste total de simulación en CPU por cada fotograma (a 60 FPS, donde el marco total disponible es de $16.6\text{ ms}$) es insignificante:
+By virtue of Behavioral LOD, the cumulative per-frame CPU load (at 60 FPS, with a full frame budget of $16.6\text{ ms}$) remains negligible:
 
-$$\text{Tiempo Total de IA} = (5 \times 0.15\text{ ms}) + (35 \times 0.02\text{ ms}) + (460 \times 0.001\text{ ms}) \approx 0.75 + 0.70 + 0.46 = \mathbf{1.91\text{ ms}}$$
+$$\text{Total AI Budget} = (5 \times 0.15\text{ ms}) + (35 \times 0.02\text{ ms}) + (460 \times 0.001\text{ ms}) \approx 0.75 + 0.70 + 0.46 = \mathbf{1.91\text{ ms}}$$
 
 > [!NOTE]
-> Menos de **$2.0\text{ ms}$ de tiempo de CPU** para gobernar un ecosistema vivo de 500 habitantes, dejando más del 85% del tiempo de procesador libre para física, renderizado, sonido y lógica del jugador.
+> Under **$2.0\text{ ms}$ of total CPU time** simulates a thriving settlement of 500 autonomous denizens, leaving over 85% of the frame available for graphics, physics, audio, and gameplay logic.
 
 ---
 
-## 3. Estrategia de Inferencia Local: Modelos SLM Cuantizados
+## 3. Local Inference Strategy: Quantized SLMs
 
-Para evitar la dependencia de conexiones a Internet, servidores en la nube y costes recurrentes por token, **SNA está diseñado para modelos pequeños locales (*Small Language Models*)**:
+To eliminate cloud server expenses, privacy concerns, and offline disconnects, **SNA is engineered specifically for local Small Language Models**:
 
 ```mermaid
 graph LR
-    subgraph HardwareLocal ["Hardware del Usuario (PC / Consola)"]
+    subgraph LocalHardware ["User Hardware (PC / Console)"]
         CPU["CPU (AVX2 / AVX-512)"]
-        iGPU["GPU Integrada / Dedicada (DirectML / Vulkan / Metal)"]
-        RAM["RAM / VRAM (1 - 2 GB asignados)"]
+        iGPU["Integrated / Dedicated GPU (DirectML / Vulkan / Metal)"]
+        RAM["System RAM / VRAM (1 - 2 GB allocated)"]
     end
 
-    subgraph RuntimeInferencia ["Runtime de Inferencia Ligero"]
+    subgraph RuntimeInference ["Lightweight Inference Engine"]
         LlamaCPP["llama.cpp / ONNX Runtime"]
-        SLM["SLM Cuantizado 4-bit (Qwen 2.5 0.5B / 1.5B o Llama 3.2 1B)"]
+        SLM["4-bit Quantized SLM (Qwen 2.5 0.5B-1.5B / Llama 3.2 1B)"]
     end
 
     CPU --> LlamaCPP
@@ -77,65 +77,65 @@ graph LR
     LlamaCPP --> SLM
 ```
 
-### Modelos de Referencia Recomendados:
-1. **Qwen 2.5 (0.5B - 1.5B Instruct en Q4_K_M):**
-   * Huella en memoria: **$350\text{ MB} - 950\text{ MB}$ de RAM/VRAM**.
-   * Velocidad: Más de **$60 - 120\text{ tokens/segundo}$** en hardware moderno mediante aceleración DirectML / ONNX o CPU.
-   * Capacidad: Excelente seguimiento de formatos estructurados JSON y diálogos breves con fuerte personalidad.
-2. **Llama 3.2 (1B - 3B Instruct en Q4_K_M):**
-   * Huella en memoria: **$750\text{ MB} - 1.8\text{ GB}$**.
-   * Capacidad: Riqueza léxica superior, ideal para NPCs clave de misiones principales o debates filosóficos.
+### Recommended Reference Models:
+1. **Qwen 2.5 (0.5B – 1.5B Instruct in Q4_K_M):**
+   * Memory Footprint: **$350\text{ MB} - 950\text{ MB}$ RAM/VRAM**.
+   * Generation Speed: **$60 - 120\text{ tokens/second}$** on modern consumer APUs/GPUs via DirectML, ONNX, or Vulkan.
+   * Strengths: Exceptional adherence to structured JSON schemas and strong personality modulation in concise replies.
+2. **Llama 3.2 (1B – 3B Instruct in Q4_K_M):**
+   * Memory Footprint: **$750\text{ MB} - 1.8\text{ GB}$**.
+   * Strengths: Broad vocabulary and nuanced subtext, suited for quest-critical NPCs and complex dilemmas.
 
 ---
 
-## 4. Planificador de Inferencia con Ventana de Tiempo (*Time-Slicing Scheduler*)
+## 4. Time-Slicing Inference Scheduler
 
-Para que la inferencia del modelo de lenguaje nunca congele el motor:
-* **Inferencia Mono-Hilo / Lote Reducido:** Solo se ejecuta **una inferencia a la vez** (o en pequeños batches de 2) en un hilo secundario independiente de la simulación del juego.
-* **Cola de Prioridades con Asignación de Tokens:**
+To preserve rock-solid frametimes during text generation:
+* **Single-Worker Serialized Queue:** Only **one active inference task** executes at any given moment (or micro-batches of 2) on a detached background worker.
+* **Prioritized Token Dispatch:**
 
 ```
-[Solicitudes Entrantes]
+[Incoming Inference Requests]
    │
-   ├── [Prioridad 1] Jugador hablando cara a cara con NPC A ───────► Se procesa INMEDIATAMENTE
-   ├── [Prioridad 2] Dos NPCs interactuando en LOD 0 (visible) ────► Se procesa al terminar P1
-   └── [Prioridad 3] Síntesis de recuerdos nocturnos (sueño) ───────► Se procesa en tiempos muertos
+   ├── [Priority 1] Player in direct face-to-face dialogue ──► Dispatched IMMEDIATELY
+   ├── [Priority 2] Two visible NPCs conversing in LOD 0 ────► Dispatched after P1 completes
+   └── [Priority 3] Nightly sleep memory consolidation ──────► Dispatched during idle periods
 ```
 
-* **Presupuesto Máximo de Tokens:**
-  * Diálogos en tiempo real: Máximo **40 tokens de salida** (aproximadamente 2 frases directas, generadas en $\approx 250 - 400\text{ ms}$).
-  * Mientras el SLM genera la frase, el NPC en LOD 0 reproduce una animación de escucha, asiente con la cabeza o balbucea un conector de voz breve ("Déjame ver...", "Bueno..."), eliminando cualquier percepción de lag para el jugador.
+* **Constrained Output Budget:**
+  * Interactive Dialogue: Strictly capped at **40 generated tokens** ($\approx 2$ punchy sentences, completed in $250 - 400\text{ ms}$).
+  * Latency Masking: While the SLM streams tokens, the LOD 0 character plays an attentive nod, turns their head, or utters a brief natural audio grunt ("Well...", "Let me see..."), rendering inference delay imperceptible.
 
 ---
 
-## 5. Estructura de Datos Orientada a Memoria Contigua (ECS)
+## 5. Contiguous Memory Architecture (ECS)
 
-Para los 500 NPCs en LOD 1 y LOD 2, los datos se almacenan en arrays contiguos (*Structure of Arrays*):
+For hundreds of agents in LOD 1 and LOD 2, state variables are laid out contiguously in memory using a Structure of Arrays (SoA):
 
 ```rust
-// Ejemplo en Rust / C++ conceptual
+// Conceptual Rust / C++ layout
 struct NPCPopulationData {
     ids: Vec<u32>,
-    positions: Vec<Vector2>,          // Coordenadas topológicas
-    current_poi_target: Vec<u16>,     // Índice del POI hacia donde va
-    needs_hunger: Vec<u8>,            // 0 a 100
-    needs_energy: Vec<u8>,            // 0 a 100
-    needs_social: Vec<u8>,            // 0 a 100
-    stress_level: Vec<u8>,            // 0 a 100
-    pad_pleasure: Vec<i8>,            // -100 a +100
-    pad_arousal: Vec<i8>,             // -100 a +100
-    pad_dominance: Vec<i8>,           // -100 a +100
-    active_lod: Vec<u8>,              // 0, 1 o 2
+    positions: Vec<Vector2>,          // Topological coordinates
+    current_poi_target: Vec<u16>,     // Target POI index
+    needs_hunger: Vec<u8>,            // 0 to 100
+    needs_energy: Vec<u8>,            // 0 to 100
+    needs_social: Vec<u8>,            // 0 to 100
+    stress_level: Vec<u8>,            // 0 to 100
+    pad_pleasure: Vec<i8>,            // -100 to +100
+    pad_arousal: Vec<i8>,             // -100 to +100
+    pad_dominance: Vec<i8>,           // -100 to +100
+    active_lod: Vec<u8>,              // 0, 1, or 2
 }
 ```
 
-* **Beneficio de Caché L1/L2:** Iterar sobre el vector de necesidades de 500 NPCs para aplicar el decaimiento por segundo toma **menos de 3 microsegundos** ($0.003\text{ ms}$), ya que los datos están compactados y no requieren saltos de punteros por el montón (*heap*).
+* **Cache Locality:** Iterating through 500 agents to apply per-second decay rates completes in **under 3 microseconds** ($0.003\text{ ms}$), leveraging hardware prefetching and zero heap pointer chasing.
 
 ---
 
-## 6. Conclusión Técnica de Viabilidad
+## 6. Technical Viability Takeaways
 
-El mito de que los NPCs con inteligencia artificial generativa requieren supercomputadores en la nube o hacen colapsar los ordenadores se desmonta con **SNA**:
-1. **La simulación pesada es matemática pura en CPU (ECS + Utility AI).**
-2. **El modelo de lenguaje solo se despierta cuando hay algo que decir o consolidar.**
-3. **El Behavioral LOD apaga el 90% del coste de cómputo para los personajes que el jugador no tiene en su campo visual inmediato.**
+The notion that generative AI NPCs require server farms or cause gaming hardware to melt is addressed directly by **SNA**:
+1. **Continuous simulation is pure CPU arithmetic (ECS + Utility AI).**
+2. **Language models activate only when there is something meaningful to say or consolidate.**
+3. **Behavioral LOD discards 90% of processing overhead for entities outside the player's immediate focus.**

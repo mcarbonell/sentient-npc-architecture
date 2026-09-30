@@ -1,169 +1,169 @@
-# 07. Plan de Implementación: Prototipo 2D "Aldea Mínima Viable" (MVP)
+# 07. Implementation Plan: 2D "Minimum Viable Village" Prototype (MVP)
 
-Este documento define la hoja de ruta práctica para construir una prueba de concepto jugable en 2D que valide la arquitectura de **SNA**. El objetivo no es crear un juego comercial completo de inmediato, sino un **laboratorio visual de simulación de vida emergente** con 5 personajes en un mapa cerrado.
+This document establishes the practical roadmap for constructing a playable 2D proof-of-concept validating **SNA**. The goal is not an immediate commercial product, but an **interactive laboratory for emergent life simulation** featuring 5 autonomous characters in a bounded environment.
 
 ---
 
-## 1. Alcance y Escenario de la Aldea Mínima
+## 1. Scope and Scenario of the Minimal Village
 
-### El Escenario Físico (Mapa 2D Tilemap de 32x24 celdas)
-Un pequeño asentamiento rural con 4 Puntos de Interés (POIs) funcionales:
+### Physical Layout (2D 32x24 Grid Tilemap)
+A compact rural settlement featuring 4 functional Points of Interest (POIs):
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                        MAPA 2D: ALDEA DEL RÍO                         │
+│                        2D MAP: RIVER VILLAGE                           │
 │                                                                        │
-│   [Granja de Trigo] 🌾                       [Herrería de Bruno] ⚒️    │
-│   (3 puestos de cosecha)                     (Yunque, horno y carbón)  │
+│   [Wheat Farm] 🌾                            [Bruno's Forge] ⚒️       │
+│   (3 harvesting plots)                       (Anvil, furnace, coal)    │
 │                                                                        │
-│                 ═════════════[Camino Central]═════════════             │
+│                 ═════════════[Central Road]═════════════               │
 │                                                                        │
-│   [Casa Compartida] 🛏️                       [Taberna El Jabalí] 🍺    │
-│   (Camas para descanso nocturno)             (Mesas, barra y ocio)     │
+│   [Shared House] 🛏️                          [The Boar Tavern] 🍺     │
+│   (Beds for nighttime rest)                  (Tables, bar counter)     │
 │                                                                        │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Los 5 Habitantes del Experimento:
-1. **Mateo (El Tabernero):** Casado con Elena. Rasgo: *Rencoroso, Celoso*. Pasa las tardes en la taberna y la noche en casa.
-2. **Elena (La Curandera):** Casada con Mateo. Rasgo: *Sociable, Empática*. Recolecta hierbas de día y visita la taberna al atardecer.
-3. **Bruno (El Herrero):** Soltero. Rasgo: *Solitario, Apasionado*. Siente una atracción secreta no correspondida hacia Elena.
-4. **Tomás (El Granjero):** Soltero. Rasgo: *Chismoso, Extrovertido*. Trabaja la granja; cuando ve interactuar a otros, lo divulga en la taberna.
-5. **Clara (La Mercader):** Rasgo: *Materialista, Observadora*. Compra trigo a Tomás y herramientas a Bruno para vender suministros.
+### The 5 Experimental Inhabitants:
+1. **Matthew (The Tavernkeeper):** Married to Elena. Traits: *Spiteful, Jealous*. Runs the tavern during evenings; sleeps at the shared home.
+2. **Elena (The Healer / Herbalist):** Married to Matthew. Traits: *Sociable, Empathetic*. Gathers herbs by day; visits the tavern at dusk.
+3. **Bruno (The Blacksmith):** Single. Traits: *Solitary, Passionate*. Harbors secret, unreciprocated romantic feelings toward Elena.
+4. **Thomas (The Farmer):** Single. Traits: *Gossip, Outgoing*. Tends the wheat farm; eagerly shares observations over drinks at the tavern.
+5. **Clara (The Merchant):** Traits: *Materialistic, Observant*. Purchases wheat from Thomas and tools from Bruno to trade general goods.
 
-### El "Test de Turing Emergente" (La prueba del drama):
-El prototipo se considerará exitoso si, sin ningún guión programado:
-1. Tomás ve a Elena y Bruno hablando cerca de la herrería.
-2. Tomás se lo cuenta a Mateo mientras pide una cerveza en la taberna.
-3. El grafo social de Mateo actualiza su desconfianza hacia Elena y odio hacia Bruno.
-4. Cuando Elena entra a la taberna, Mateo le lanza un reproche sarcástico generado por el SLM local coherente con la situación.
+### The "Emergent Turing Test" (The Drama Benchmark):
+The prototype is considered an unequivocal success if, without any hardcoded scripting:
+1. Thomas witnesses Elena and Bruno conversing near the blacksmith's forge.
+2. Thomas mentions this encounter to Matthew while ordering an ale at the tavern counter.
+3. Matthew's social graph automatically updates: trust in Elena falls, hatred toward Bruno spikes.
+4. When Elena later enters the tavern, Matthew confronts her with a contextually coherent, sarcastic remark generated on the spot by the local SLM.
 
 ---
 
-## 2. Pila Tecnológica Recomendada para Prototipado Rápido
+## 2. Recommended Tech Stack for Rapid Prototyping
 
-Para iterar a máxima velocidad con cero fricción de compilación:
+To iterate rapidly with minimal compilation friction:
 
-| Capa | Tecnología Seleccionada | Justificación |
+| Layer | Technology Choice | Rationale |
 | :--- | :--- | :--- |
-| **Lenguaje Base** | **Python 3.11+** | Máxima velocidad de desarrollo asistido por IA, excelente ecosistema para IA/LLMs. |
-| **Motor 2D / Render** | **Pygame-CE** o **Arcade** | Renderizado 2D directo, sprites simples, gestión de eventos a 60 FPS sin sobrecarga. |
-| **Simulación y Estado** | **ECS Ligero (esper/in-house) + SQLite** | Separación limpia de datos en memoria para necesidades y memoria persistente. |
-| **Motor de Inferencia SLM** | **`llama-cpp-python` / Ollama local** | Ejecución en local de **Qwen 2.5 0.5B / 1.5B (GGUF 4-bit)** usando CPU o GPU DirectML. |
-| **Navegación** | **Pathfinding $A^*$ en grid + 2-opt TSP** | Algoritmo clásico en cuadrícula 2D, ligero e instantáneo. |
+| **Base Language** | **Python 3.11+** | Rapid prototyping speed, clean data handling, top-tier AI/LLM ecosystem. |
+| **2D Engine / Rendering** | **Pygame-CE** or **Arcade** | Direct 2D rendering, simple sprites, rock-solid 60 FPS event loop. |
+| **Simulation & State** | **Lightweight ECS (esper / custom) + SQLite** | Data-oriented design for biological drives; ACID persistence for memories. |
+| **SLM Inference Engine** | **`llama-cpp-python` / Local Ollama** | Hardware-accelerated local execution of **Qwen 2.5 0.5B / 1.5B (GGUF 4-bit)**. |
+| **Navigation** | **Grid $A^*$ + 2-opt TSP** | Fast, deterministic grid pathfinding and optimal errand sequence solving. |
 
 ---
 
-## 3. Desglose de Fases, Tareas y Estimaciones de Tiempo
+## 3. Phase Breakdown, Tasks, and Time Estimates
 
-A continuación se compara el tiempo estimado en **Desarrollo Tradicional en solitario** frente a **Desarrollo Asistido por IA Generativa / Antigravity**.
+Below is an engineering comparison of estimated development time between **Traditional Solo Development** and **AI-Assisted Development (via Antigravity)**.
 
-### FASE 1: El Tablero y el Bucle Físico (El Cuerpo)
-*Construcción del mapa 2D, bucle de juego a 60 FPS y movimiento de personajes.*
+### PHASE 1: The Board & Physical Loop (The Body)
+*Construction of the 2D tilemap, 60 FPS update loop, and character locomotion.*
 
-| Tarea | Descripción Técnica | Dev Tradicional | Con IA Asistida |
+| Task | Technical Description | Traditional Dev | AI-Assisted |
 | :--- | :--- | :---: | :---: |
-| **1.1 Entorno y Tilemap** | Cuadrícula 2D con renderizado de tiles (hierba, caminos, paredes de POIs). | 6 horas | 1.5 horas |
-| **1.2 Componentes ECS de Necesidades** | Structs para Hambre, Energía y Diversión con decaimiento continuo y curvas de utilidad. | 8 horas | 2.0 horas |
-| **1.3 Navegación $A^*$ y Rutinas** | Pathfinding sobre cuadrícula para viajar entre POIs según la hora del día. | 10 horas | 2.5 horas |
-| **1.4 Optimizador TSP 2-opt** | Algoritmo para secuenciar 3 o 4 tareas de granja/recolección en el orden más corto. | 6 horas | 1.5 horas |
-| **Subtotal Fase 1** | | **30 horas** | **7.5 horas** |
+| **1.1 Environment & Tilemap** | 2D tile renderer (grass, cobblestones, POI structural walls). | 6 hours | 1.5 hours |
+| **1.2 ECS Needs Components** | Structs for Hunger, Energy, and Fun with continuous decay and utility curves. | 8 hours | 2.0 hours |
+| **1.3 $A^*$ Pathfinding & Routines** | Grid navigation enabling transit between POIs based on schedule time. | 10 hours | 2.5 hours |
+| **1.4 2-opt TSP Optimizer** | Heuristic sequencer for ordering 3-4 daily errands along the shortest route. | 6 hours | 1.5 hours |
+| **Phase 1 Subtotal** | | **30 hours** | **7.5 hours** |
 
 ---
 
-### FASE 2: La Red Social y los Sentidos (Las Relaciones)
-*Percepción sensorial de los NPCs y actualización del grafo relacional.*
+### PHASE 2: The Social Graph & Senses (The Relationships)
+*Sensory perception mechanics and relational graph updates.*
 
-| Tarea | Descripción Técnica | Dev Tradicional | Con IA Asistida |
+| Task | Technical Description | Traditional Dev | AI-Assisted |
 | :--- | :--- | :---: | :---: |
-| **2.1 Sensores de Visión/Proximidad** | Detección espacial de qué NPCs u objetos están en el campo de visión de cada agente. | 6 horas | 1.5 horas |
-| **2.2 Estructura del Grafo Social** | Matriz de adyacencia dirigida en memoria: Afinidad, Confianza y Romance entre los 5 personajes. | 8 horas | 2.0 horas |
-| **2.3 Motor de Cotilleos (Gossip System)** | Intercambio de paquetes de información entre NPCs en el mismo POI con distorsión por antipatía. | 12 horas | 3.0 horas |
-| **2.4 Disparadores de Colapso / Reacción** | Fórmulas que alteran el ánimo y detonan interrupciones (ej. confrontación al cruzar miradas). | 8 horas | 2.0 horas |
-| **Subtotal Fase 2** | | **34 horas** | **8.5 horas** |
+| **2.1 Vision & Proximity Sensors** | Spatial cones detecting which agents and objects enter an NPC's line of sight. | 6 hours | 1.5 hours |
+| **2.2 Social Graph Representation** | In-memory directed adjacency matrix: Affinity, Trust, and Romance for all 5 NPCs. | 8 hours | 2.0 hours |
+| **2.3 Gossip Engine** | Information exchange packets between co-located NPCs with emotional distortion. | 12 hours | 3.0 hours |
+| **2.4 Mood & Crisis Triggers** | State triggers altering PAD vectors and firing interrupts (e.g., eye contact confrontations).| 8 hours | 2.0 hours |
+| **Phase 2 Subtotal** | | **34 hours** | **8.5 hours** |
 
 ---
 
-### FASE 3: La Voz y la Mente (Integración del SLM Local)
-*Conexión asíncrona del modelo de lenguaje para diálogos y pensamientos.*
+### PHASE 3: The Voice & Mind (Local SLM Integration)
+*Asynchronous bridge connecting the local language model for speech and thoughts.*
 
-| Tarea | Descripción Técnica | Dev Tradicional | Con IA Asistida |
+| Task | Technical Description | Traditional Dev | AI-Assisted |
 | :--- | :--- | :---: | :---: |
-| **3.1 Worker Thread de Inferencia** | Hilo desacoplado en segundo plano con cola de prioridad para no congelar los 60 FPS de Pygame. | 10 horas | 2.5 horas |
-| **3.2 Ensamblador de Prompts Breves** | Inyector de contexto dinámico (OCEAN + estado de necesidades + relación + último recuerdo en < 250 tokens). | 8 horas | 2.0 horas |
-| **3.3 Validador JSON de Salida** | Parser estricto para extraer la frase de diálogo y la variación emocional sin errores de sintaxis. | 6 horas | 1.5 horas |
-| **3.4 Bocadillos de Diálogo en Pantalla** | Renderizado de burbujas de texto temporales sobre los sprites cuando interactúan. | 6 horas | 1.5 horas |
-| **Subtotal Fase 3** | | **30 horas** | **7.5 horas** |
+| **3.1 Background Inference Worker** | Thread-safe queue preventing SLM execution from stalling Pygame's 60 FPS loop. | 10 hours | 2.5 hours |
+| **3.2 Context-Aware Prompt Builder** | Dynamic prompt assembler (OCEAN + needs + relationship + last memory in < 250 tokens).| 8 hours | 2.0 hours |
+| **3.3 JSON Output Schema Validator** | Strict parser ensuring valid output format (speech line, mood delta) without crashes. | 6 hours | 1.5 hours |
+| **3.4 In-Game Speech Bubbles** | Floating pop-up text rendering above character sprites during dialogues. | 6 hours | 1.5 hours |
+| **Phase 3 Subtotal** | | **30 hours** | **7.5 hours** |
 
 ---
 
-### FASE 4: La Memoria y el Ciclo Día/Noche
-*Persistencia episódica, sueño y consolidación reflexiva.*
+### PHASE 4: Memory and the Day/Night Cycle
+*Episodic persistence, sleeping, and reflective consolidation.*
 
-| Tarea | Descripción Técnica | Dev Tradicional | Con IA Asistida |
+| Task | Technical Description | Traditional Dev | AI-Assisted |
 | :--- | :--- | :---: | :---: |
-| **4.1 Búfer de Recuerdos Episódicos** | Registro en SQLite en memoria de eventos relevantes presenciados durante el día. | 8 horas | 2.0 horas |
-| **4.2 Ciclo Día/Noche y Reloj Global** | Transición horaria visual (iluminación diurna/nocturna) y llamada a la cama. | 4 horas | 1.0 hora |
-| **4.3 Fase de Consolidación Nocturna** | Batch nocturno donde el SLM sintetiza los eventos del día en una opinión antes de dormir. | 10 horas | 2.5 horas |
-| **Subtotal Fase 4** | | **22 horas** | **5.5 horas** |
+| **4.1 Episodic Memory Buffer** | In-memory SQLite table logging salient daily events witnessed by each character. | 8 hours | 2.0 hours |
+| **4.2 Day/Night Cycle & Clock** | Visual clock, ambient light shifting, and bedtime curfew broadcast. | 4 hours | 1.0 hour |
+| **4.3 Nightly Sleep Consolidation** | Batch SLM synthesis summarizing daily episodic logs into lasting opinions. | 10 hours | 2.5 hours |
+| **Phase 4 Subtotal** | | **22 hours** | **5.5 hours** |
 
 ---
 
-### FASE 5: Panel de Telemetría e Inspección (El "Inspector de Mentes")
-*Herramienta visual para que el desarrollador/jugador vea la IA en directo.*
+### PHASE 5: Telemetry & Inspection Panel (The "Mind Inspector")
+*Visual debugging tooling allowing developers and players to inspect internal AI states.*
 
-| Tarea | Descripción Técnica | Dev Tradicional | Con IA Asistida |
+| Task | Technical Description | Traditional Dev | AI-Assisted |
 | :--- | :--- | :---: | :---: |
-| **5.1 Interfaz de Selección de NPC** | Clic con ratón sobre un personaje para abrir su ficha lateral. | 4 horas | 1.0 hora |
-| **5.2 Visualizador de Necesidades y Emociones** | Barras dinámicas de Hambre, Sueño, Estrés y posición en espacio PAD. | 4 horas | 1.0 hora |
-| **5.3 Visor del Grafo Social y Memorias** | Lista de opiniones hacia los otros 4 personajes y los 3 recuerdos más recientes. | 6 horas | 1.5 horas |
-| **Subtotal Fase 5** | | **14 horas** | **3.5 horas** |
+| **5.1 Mouse Selection UI** | Click-to-inspect interaction opening an agent's telemetry sidebar. | 4 hours | 1.0 hour |
+| **5.2 Needs & Mood Visualizer** | Real-time bars for Hunger, Energy, Stress, and coordinate in PAD space. | 4 hours | 1.0 hour |
+| **5.3 Social Graph & Memory View** | Inspector displaying relational metrics toward other NPCs and top 3 memories. | 6 hours | 1.5 hours |
+| **Phase 5 Subtotal** | | **14 hours** | **3.5 hours** |
 
 ---
 
-## 4. Resumen Global de Tiempos y Esfuerzo
+## 4. Overall Development Effort Summary
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│ TOTAL PROYECTO COMPLETO (MVP 2D ALDEA):                                │
+│ TOTAL PROJECT ESTIMATION (2D MVP VILLAGE):                             │
 │                                                                        │
-│ • Desarrollo Tradicional:     130 horas (aprox. 3.5 a 4 semanas)       │
-│ • Desarrollo Asistido por IA:  32.5 horas (aprox. 4 a 5 días de trabajo)│
+│ • Traditional Solo Development: 130 hours (~3.5 to 4 weeks)            │
+│ • AI-Assisted Development:       32.5 hours (~4 to 5 working days)     │
 │                                                                        │
-│ REDUCCIÓN DE TIEMPO ESTIMADA: ~75% de ahorro en desarrollo             │
+│ ESTIMATED TIME SAVINGS: ~75% reduction in total development effort     │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
 > [!TIP]
-> **Estrategia de Ejecución Iterativa:**  
-> Se puede tener un **"Hito 0 Funcional" (Fase 1 + 2 básica)** listo en unas **10-12 horas de trabajo asistido**, donde ya se ve a los monigotes recorrer el mapa, comer, dormir y enfadarse entre ellos mediante iconos, antes de enchufar el modelo de lenguaje.
+> **Iterative Milestone Strategy:**  
+> A functional **Milestone 0 (Phases 1 & 2 baseline)** can be running within **10-12 hours of assisted development**. Characters will navigate, sleep, eat, and express frustration using overhead emoji icons—proving out the simulation before connecting the language model.
 
 ---
 
-## 5. Estructura de Archivos Proyectada para la Implementación
+## 5. Projected Codebase Architecture
 
-Cuando se proceda a codificar, el código se organizará bajo esta estructura modular:
+When ready for code implementation, the project will be organized as follows:
 
 ```
 sentient-npc-architecture/
-├── docs/                             # Documentación de diseño (existente)
+├── docs/                             # Architectural design documents
 │   └── 07-mvp-village-implementation-plan.md
 ├── src/
 │   ├── core/
-│   │   ├── ecs.py                    # Gestor de entidades y componentes
-│   │   ├── time_manager.py           # Reloj del juego y ciclo día/noche
-│   │   └── event_bus.py              # Sistema de eventos global
+│   │   ├── ecs.py                    # Entity and component registry
+│   │   ├── time_manager.py           # Game clock & circadian day/night phases
+│   │   └── event_bus.py              # Central event publication bus
 │   ├── simulation/
-│   │   ├── needs.py                  # Curvas de utilidad fisiológica
-│   │   ├── navigation.py             # A* y TSP 2-opt
-│   │   └── social_graph.py           # Grafo dirigido y propagación de rumores
+│   │   ├── needs.py                  # Physiological drive decay & utility curves
+│   │   ├── navigation.py             # A* pathfinding and 2-opt TSP
+│   │   └── social_graph.py           # Asymmetric graph & rumor dissemination
 │   ├── ai/
-│   │   ├── slm_worker.py             # Inferencia asíncrona local (llama.cpp)
-│   │   ├── prompt_builder.py         # Ensamblador contextual de prompts
-│   │   └── memory_db.py              # SQLite para memorias y consolidación
+│   │   ├── slm_worker.py             # Asynchronous inference thread (llama.cpp)
+│   │   ├── prompt_builder.py         # Dynamic context assembler
+│   │   └── memory_db.py              # SQLite storage & sleep reflection pipeline
 │   ├── view/
-│   │   ├── renderer.py               # Renderizado 2D de tiles y sprites
-│   │   └── ui_inspector.py           # Panel lateral de telemetría del NPC
-│   └── main.py                       # Punto de entrada de la aplicación
-└── requirements.txt                  # Dependencias mínimas (pygame-ce, llama-cpp-python)
+│   │   ├── renderer.py               # 2D tilemap and character sprite rendering
+│   │   └── ui_inspector.py           # Real-time telemetry inspector overlay
+│   └── main.py                       # Application bootstrap
+└── requirements.txt                  # Dependencies (pygame-ce, llama-cpp-python)
 ```

@@ -1,147 +1,147 @@
-# 04. Inteligencia Espacial, Rutinas y Optimización de Rutas (TSP)
+# 04. Spatial AI, Routines, and Route Optimization (TSP)
 
-Este documento especifica cómo los NPCs perciben el mapa del juego, gestionan sus agendas diarias y resuelven la optimización de sus desplazamientos físicos y tareas dispersas mediante el **Problema del Viajante (TSP)** de manera ultraeficiente.
+This document specifies how NPCs perceive the world environment, execute circadian daily routines, and resolve route planning and unordered errand optimization using the **Traveling Salesperson Problem (TSP)** with extreme computational efficiency.
 
 ---
 
-## 1. Representación del Mundo: El Grafo de Puntos de Interés (POI Graph)
+## 1. World Representation: The Point of Interest (POI) Graph
 
-Para evitar que los cálculos de navegación ahoguen la CPU, el mundo **no se consulta celda por celda ni polígono por polígono** en la toma de decisiones estratégicas.
+To avoid CPU saturation from redundant navigation queries, the environment **is not searched grid-by-grid or polygon-by-polygon** during high-level strategic reasoning.
 
-El entorno se abstrae como un **Grafo Topológico de Puntos de Interés**:
+The world is abstracted as a **Topological Graph of Points of Interest**:
 
 $$\mathcal{G}_{\text{world}} = (\mathcal{V}_{\text{POI}}, \mathcal{E}_{\text{transit}})$$
 
 ```
-[Granja Norte] ═══════ (Camino Real) ═══════ [Molino]
-     ║                                          ║
-     ║ (Sendero)                                ║ (Calle)
-     ▼                                          ▼
-[Mercado Central] ══════ (Plaza Mayor) ══════ [Taberna "El Jabalí"]
-     ║                                          ║
-     ║ (Callejón)                               ║ (Paso subterráneo)
-     ▼                                          ▼
-[Vivienda Mateo] ════════════════════════════ [Herrería Bruno]
+[North Farm] ═══════ (High Road) ═══════ [Flour Mill]
+     ║                                        ║
+     ║ (Trail)                                ║ (Cobblestone Street)
+     ▼                                        ▼
+[Central Market] ══════ (Town Square) ══════ [The Boar Tavern]
+     ║                                        ║
+     ║ (Alley)                                ║ (Tunnel)
+     ▼                                        ▼
+[Matthew's House] ══════════════════════════ [Bruno's Forge]
 ```
 
-### Componentes de un POI (Punto de Interés):
-* **ID y Tipo:** `mercado_puesto_fruta`, `banco_parque`, `yunque_herrero`, `cama_propia`.
-* **Capacidad de Concurrencia:** Número máximo de NPCs que pueden interactuar simultáneamente (ej. una cama = 1, la taberna = 20).
-* **Affordances (Acciones permitidas):** `[DORMIR, COMER, TRABAJAR_HERRERIA, SOCIALIZAR, VENDER]`.
-* **Costes de Tránsito Precalculados:** Matriz de distancias $D[i, j]$ entre POIs calculada en tiempo de compilación/carga del mapa.
+### Anatomy of a Point of Interest (POI):
+* **ID & Category:** `market_fruit_stall`, `park_bench`, `blacksmith_anvil`, `personal_bed`.
+* **Concurrency Limit:** Maximum number of agents allowed to interact concurrently (e.g., bed = 1, tavern counter = 20).
+* **Affordances (Allowed Actions):** `[SLEEP, EAT, FORGE_WORK, SOCIALIZE, TRADE]`.
+* **Precomputed Transit Costs:** Distance matrix $D[i, j]$ between POI nodes calculated at map build/load time.
 
 ---
 
-## 2. Agenda Circadiana Flexible (Schedules)
+## 2. Flexible Circadian Schedules
 
-Inspirado en *Stardew Valley* y *Red Dead Redemption 2*, cada profesión posee una plantilla horaria diaria con **ventanas de tolerancia**:
+Inspired by systems in *Stardew Valley* and *Red Dead Redemption 2*, every profession uses a daily timetable template equipped with **tolerance windows**:
 
 ```
 00:00        06:00       08:00           13:00   14:00           18:00           22:00       24:00
 ┌──────────────┬───────────┬───────────────┬───────┬───────────────┬───────────────┬───────────┐
-│ Dormir en    │ Aseo y    │ Trabajo en    │ Almuerzo│ Comercio /    │ Ocio Social   │ Regreso y │
-│ Cama Propia  │ Desayuno  │ Campo/Taller  │ Rápido│ Recados Varios│ en Taberna    │ Cena Casa │
+│ Sleep in     │ Wash &    │ Field / Shop  │ Quick │ Market Trade  │ Socialize     │ Return &  │
+│ Home Bed     │ Breakfast │ Labor         │ Lunch │ & Errands     │ in Tavern     │ Home Dine │
 └──────────────┴───────────┴───────────────┴───────┴───────────────┴───────────────┴───────────┘
 ```
 
-### Flexibilidad Condicional (Interrupciones Orgánicas):
-La agenda no es un carril férreo rígido. Si ocurre cualquiera de estas condiciones, la agenda se suspende mediante una **Pila de Estados (*Interruption Stack*)**:
-1. **Necesidad Crítica:** Si $\text{Hambre} > 85$ a las 10:00 AM, el NPC interrumpe el trabajo y visita el almacén para comer.
-2. **Clima Adverso:** Si llueve torrencialmente y el NPC no tiene ropa adecuada, abandona el campo y se refugia bajo un tejado.
-3. **Interacción Social / Conversación:** Si el jugador o un amigo le habla, detiene su marcha y orienta su mirada. Al terminar, reanuda la tarea activa sin reiniciar el día.
+### Organic Interrupts (Interruption Stack):
+Schedules are never rigid rails. When any of the following conditions are met, the active routine is suspended via a **Last-In, First-Out (LIFO) Interruption Stack**:
+1. **Critical Drive:** If $\text{Hunger} > 85$ at 10:00 AM, the NPC pauses work and visits the pantry to eat.
+2. **Adverse Weather:** If torrential downpours strike and the NPC lacks rain gear, outdoor work stops to seek shelter under eaves.
+3. **Conversational Interruption:** When greeted by the player or an acquaintance, the NPC halts and turns their gaze. Once finished, they resume their active objective seamlessly.
 
 ---
 
-## 3. Optimización de Tareas y Rutas mediante TSP (Traveling Salesperson Problem)
+## 3. Task and Route Optimization via TSP (Traveling Salesperson Problem)
 
-### El Escenario de las Tareas Dispersas
-Un granjero o artesano no va simplemente de A a B. Su jornada laboral a menudo involucra una **lista no ordenada de recados ($N$ tareas)**:
-* Recoger 3 sacos de trigo del campo A.
-* Reparar la valla rota en el sector norte.
-* Llevar el grano al molino.
-* Comprar semillas nuevas en el mercado central.
-* Llevar sobras al corral de animales.
+### The Errand Sequencing Challenge
+A villager or artisan rarely moves purely between two static points. Daily shifts frequently consist of an **unordered batch of errands ($N$ tasks)**:
+* Pick up 3 sacks of grain from North Field.
+* Repair damaged fence section near the sheep pen.
+* Deliver harvest to the flour mill.
+* Purchase fresh seeds at the central market stall.
+* Deliver kitchen scraps to the chicken coop.
 
-Si el NPC visita los puntos en orden aleatorio, recorrerá distancias absurdas pareciendo errático y consumiendo tiempo innecesario.
+Visiting these destinations in arbitrary order causes frantic zig-zagging, breaking player immersion and wasting game time.
 
 ```
-Ruta Caótica (Ingenua):                    Ruta Optimizada (TSP 2-opt):
+Naive Chaotic Route:                       Optimized Route (TSP 2-opt):
    [A] ───────────► [C]                       [A] ────────────► [B]
     │                ▲                         │                 │
     │  ╭───────────╯ │                         │                 │
     ▼  ▼             │                         ▼                 ▼
    [D] ───────────► [B]                       [D] ◄─────────── [C]
-   (Cruces de camino y pérdida de tiempo)     (Circuito cerrado y natural)
+   (Crossed paths & wasted travel time)       (Natural, smooth circuit)
 ```
 
-### Algoritmo Ligero: Heurística 2-opt sobre Grafo de POIs
+### Lightweight Heuristic: 2-opt over POI Graph
 
-Dado que $N$ suele ser pequeño ($3 \le N \le 8$ tareas por franja horaria), no se requiere programación entera mixta ni fuerza bruta $O(N!)$.
+Because $N$ is small ($3 \le N \le 8$ tasks per time slot), integer linear programming or brute-force $O(N!)$ searches are completely unnecessary.
 
-Se aplica una combinación en dos fases que toma **menos de 0.02 milisegundos de CPU**:
-1. **Fase 1: Vecino Más Cercano (*Greedy Nearest Neighbor*):**
-   * Comenzando en la posición actual del NPC, selecciona iterativamente el POI no visitado más cercano usando la matriz de distancias precalculada $D[i, j]$.
-2. **Fase 2: Optimización Local *2-opt*:**
-   * Itera sobre los pares de aristas de la ruta; si cruzar dos conexiones reduce la distancia total sin violar restricciones de precedencia (ej. "cosechar antes de moler"), invierte el segmento.
+A two-stage algorithm executes in **under 0.02 milliseconds of CPU time**:
+1. **Stage 1: Greedy Nearest Neighbor:**
+   * Starting at the NPC's current position, greedily append the nearest unvisited POI using the precomputed distance matrix $D[i, j]$.
+2. **Stage 2: 2-opt Local Search:**
+   * Iterate over edge pairs; if uncrossing two edges reduces total path length without violating precedence rules (e.g., "harvest grain before visiting mill"), reverse the intermediate tour segment.
 
 $$\Delta_{\text{dist}} = (D[u, v'] + D[u', v]) - (D[u, u'] + D[v, v'])$$
-Si $\Delta_{\text{dist}} < 0$, se adopta la nueva ruta.
+If $\Delta_{\text{dist}} < 0$, the tour update is committed.
 
 ---
 
-## 4. Navegación Jerárquica: HPA\* (*Hierarchical Pathfinding*)
+## 4. Hierarchical Navigation: HPA\* (*Hierarchical Pathfinding*)
 
-Para ejecutar físicamente los desplazamientos sin colapsar la malla de navegación (*NavMesh*):
+To traverse large game worlds without choking the pathfinder:
 
 ```mermaid
 graph TD
-    subgraph MacroNivel ["Nivel Macro (Nivel 2 - Táctico)"]
-        A["Distrito Residencial"] -->|"Portal Camino Central"| B["Distrito Comercial"]
-        B -->|"Portal Puente del Río"| C["Distrito Agrícola"]
+    subgraph MacroLevel ["Macro Tier (Tier 2 - Tactical Planning)"]
+        A["Residential Quarter"] -->|"High Road Portal"| B["Market District"]
+        B -->|"River Bridge Portal"| C["Farming Outskirts"]
     end
 
-    subgraph MicroNivel ["Nivel Micro (Nivel 1 - Físico en LOD 0/1)"]
-        subgraph DistritoComercial ["Dentro del Distrito Comercial"]
-            P1["Entrada Calle"] --> P2["Puesto de Especias"]
-            P2 --> P3["Evadir Carreta Rota"]
-            P3 --> P4["Puerta Taberna"]
+    subgraph MicroLevel ["Micro Tier (Tier 1 - Physics NavMesh in LOD 0/1)"]
+        subgraph MarketDistrict ["Inside Market District"]
+            P1["Street Gate"] --> P2["Spice Stall"]
+            P2 --> P3["Avoid Broken Wagon"]
+            P3 --> P4["Tavern Entrance"]
         end
     end
 
-    B -.-> DistritoComercial
+    B -.-> MarketDistrict
 ```
 
-1. **Ruta Macro (HPA\* en Grafo de Nodos/Portales):**
-   * Resuelve el tránsito entre regiones completas del mapa en microsegundos.
-   * Funciona incluso si el NPC está en **LOD 2 (fuera de pantalla)**.
-2. **Ruta Micro (NavMesh A\* local):**
-   * Solo se activa si el NPC está a menos de 100 metros del jugador (LOD 0 o LOD 1).
-   * Calcula la trayectoria detallada con evitación de obstáculos dinámicos (otros peatones, carretas, barriles).
+1. **Macro Routing (HPA\* on Region Portal Graph):**
+   * Computes transit across entire map zones in microsecond intervals.
+   * Remains functional even when the NPC is operating in **LOD 2 (off-screen / background simulation)**.
+2. **Micro Routing (Local NavMesh A\*):**
+   * Activated only within 100 meters of the active camera (LOD 0 and LOD 1).
+   * Generates steering trajectories with dynamic obstacle avoidance (other pedestrians, loose carts, debris).
 
 ---
 
-## 5. Pila de Reanudación de Comportamiento (*Behavior Resumption Stack*)
+## 5. Behavior Resumption Stack
 
-Cuando un evento interrumpe la rutina de un NPC, el estado se guarda en una pila LIFO (*Last-In, First-Out*):
+When an unexpected event interrupts an NPC's agenda, the runtime snapshot is preserved in a LIFO stack:
 
 ```json
 {
   "stack_size": 2,
   "stack": [
     {
-      "estado": "RUTINA_TRABAJO_GRANJA",
-      "progreso": "tarea_3_de_5",
-      "poi_objetivo": "campo_trigo_norte",
-      "datos_contexto": { "sacos_recogidos": 2 }
+      "state": "ROUTINE_FARM_LABOR",
+      "progress": "task_3_of_5",
+      "target_poi": "north_wheat_field",
+      "context_data": { "sacks_gathered": 2 }
     },
     {
-      "estado": "CONVERSACION_CON_JUGADOR",
+      "state": "PLAYER_CONVERSATION",
       "interlocutor": "player_id",
-      "tiempo_inicio": 842.1
+      "start_time": 842.1
     }
   ]
 }
 ```
 
-* Al despedirse el jugador, el estado `CONVERSACION_CON_JUGADOR` se extrae de la pila.
-* El NPC regresa inmediatamente a `RUTINA_TRABAJO_GRANJA` con sus sacos ya recogidos intactos, retomando la navegación hacia su objetivo sin reinicios de ciclo artificiales.
+* Once the conversation terminates, the `PLAYER_CONVERSATION` frame is popped.
+* The agent returns instantly to `ROUTINE_FARM_LABOR` with gathered goods preserved, resuming locomotion toward the harvest node without reset glitches.
