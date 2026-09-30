@@ -36,7 +36,7 @@ graph TD
 
     subgraph ExecutiveLayer ["Tactical Brain: Executive / Spatial (1 Hz)"]
         Agenda["Circadian Scheduler & Agenda"]
-        TSP["Route & Task Optimizer (TSP / 2-opt)"]
+        TSP["Route & Task Optimizer (k-Alternatives & Ripple Insertion)"]
         HPA["Hierarchical Pathfinding (HPA*)"]
     end
 
@@ -64,7 +64,7 @@ The complete architectural specification is organized into dedicated technical d
 | **[01. System Architecture & Vision](docs/01-system-architecture.md)** | Breakdown of the "Triune Brain", tick life-cycles, decoupled main loop, and multi-threaded execution model. |
 | **[02. Character Model & Psychology](docs/02-psychology-and-character-model.md)** | OCEAN personality traits (Big Five), physiological needs vectors, continuous PAD emotional space, phobias, philias, and biographical lore anchors. |
 | **[03. Dynamic Social Graph & Drama Engine](docs/03-social-graph-and-drama-engine.md)** | Asymmetric relational graphs (affinity, trust, romance, dominance), memetic rumor propagation (gossip engine), marriage, jealousy, and betrayal. |
-| **[04. Spatial AI, Routines & Route Optimization (TSP)](docs/04-spatial-ai-and-routines.md)** | Point of Interest (POI) graphs, lightweight Traveling Salesperson (TSP / 2-opt) resolution for daily errands, and HPA* hierarchical navigation. |
+| **[04. Spatial AI, Routines & Route Optimization (TSP)](docs/04-spatial-ai-and-routines.md)** | Point of Interest (POI) graphs, routine planning via **k-Alternatives**, real-time dynamic interrupt routing via **Ripple Insertion**, and HPA* hierarchical navigation. |
 | **[05. Memory & Cognitive Pipeline](docs/05-memory-and-cognitive-pipeline.md)** | Three-tier sensory ring buffers, lightweight semantic memory, retrieval scoring functions, and nightly sleep consolidation. |
 | **[06. Hardware, Performance & Behavioral LOD](docs/06-hardware-and-performance-lod.md)** | Behavioral LOD 0, 1, and 2 stratification, time-sliced inference scheduling, and local quantized SLM integration (GGUF / ONNX DirectML). |
 | **[07. 2D Prototype: Minimum Viable Village (MVP)](docs/07-mvp-village-implementation-plan.md)** | Implementation roadmap for a 5-NPC 2D simulation with a tilemap, emergent drama testing, task breakdown, and development timelines. |

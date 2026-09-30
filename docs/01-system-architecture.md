@@ -26,7 +26,7 @@ The NPC cognitive stack is segregated into three concurrent subsystems with tick
 +-------------------------------------------------------------------------+
 |                    TIER 2: EXECUTIVE / SPATIAL                          |
 |  * Frequency: Regular / Tactical (0.5 - 2 Hz) / 0.5s - 2s               |
-|  * Technologies: GOAP Planner, TSP Optimizer, HPA* Navigation           |
+|  * Technologies: GOAP Planner, k-Alternatives & Ripple Insertion, HPA*  |
 |  * Responsibilities: Route resolution, daily itinerary, inventory       |
 +-------------------------------------------------------------------------+
                                     ▲  │ (Atomic actions / Destinations)
@@ -56,7 +56,7 @@ The NPC cognitive stack is segregated into three concurrent subsystems with tick
 * **Architecture:** Planning cycle executed every 1 to 2 seconds on a dedicated *Simulation Worker Thread*.
 * **Core Components:**
   * `ScheduleComponent`: Flexible circadian timetable (e.g., 08:00 Breakfast, 09:00 Harvest wheat, 14:00 Trade at market).
-  * `TaskSequenceOptimizer (TSP)`: Errands optimizer that minimizes travel distance across the day using *2-opt* heuristics over Point of Interest (POI) graphs.
+  * `TaskSequenceOptimizer (Dual TSP)`: Combines **k-Alternatives** for daily itinerary planning (with learned heuristic lists) and **Ripple Insertion** for dynamic, real-time interrupt routing (<0.05 ms) over Point of Interest (POI) graphs.
   * `MacroNavigation`: Hierarchical route planning using HPA* (*Hierarchical Pathfinding*).
 
 ### Layer 3: Cognitive and Generative System (*Slow / Event-Driven Tick*)

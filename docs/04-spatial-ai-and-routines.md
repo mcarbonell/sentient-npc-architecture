@@ -52,7 +52,7 @@ Schedules are never rigid rails. When any of the following conditions are met, t
 
 ---
 
-## 3. Task and Route Optimization via TSP (Traveling Salesperson Problem)
+## 3. Task and Route Optimization via TSP (Dual-Engine: k-Alternatives & Ripple Insertion)
 
 ### The Errand Sequencing Challenge
 A villager or artisan rarely moves purely between two static points. Daily shifts frequently consist of an **unordered batch of errands ($N$ tasks)**:
@@ -65,7 +65,7 @@ A villager or artisan rarely moves purely between two static points. Daily shift
 Visiting these destinations in arbitrary order causes frantic zig-zagging, breaking player immersion and wasting game time.
 
 ```
-Naive Chaotic Route:                       Optimized Route (TSP 2-opt):
+Naive Chaotic Route:                       Optimized Route (k-Alternatives / Ripple):
    [A] ───────────► [C]                       [A] ────────────► [B]
     │                ▲                         │                 │
     │  ╭───────────╯ │                         │                 │
@@ -74,18 +74,25 @@ Naive Chaotic Route:                       Optimized Route (TSP 2-opt):
    (Crossed paths & wasted travel time)       (Natural, smooth circuit)
 ```
 
-### Lightweight Heuristic: 2-opt over POI Graph
+### Dual Optimization Engines: Planning vs. Dynamic Re-routing
 
-Because $N$ is small ($3 \le N \le 8$ tasks per time slot), integer linear programming or brute-force $O(N!)$ searches are completely unnecessary.
+Rather than relying on basic greedy 2-opt or costly global recomputations, the architecture decouples errand optimization into two specialized algorithmic engines:
 
-A two-stage algorithm executes in **under 0.02 milliseconds of CPU time**:
-1. **Stage 1: Greedy Nearest Neighbor:**
-   * Starting at the NPC's current position, greedily append the nearest unvisited POI using the precomputed distance matrix $D[i, j]$.
-2. **Stage 2: 2-opt Local Search:**
-   * Iterate over edge pairs; if uncrossing two edges reduces total path length without violating precedence rules (e.g., "harvest grain before visiting mill"), reverse the intermediate tour segment.
+#### 1. Planned Daily Itineraries: [k-Alternatives Meta-Heuristic](https://github.com/mcarbonell/k-alternatives-meta-algorithm)
+* **When used:** Macro-planning during morning routine generation, schedule shifts, or major goal reorganization.
+* **Mechanism:**
+  * Uses greedy nearest-neighbor or insertion baselines augmented with **bounded $k$-deviations** (evaluating top-$k$ alternate choices at each decision branch).
+  * **Adaptive Heuristic Learning:** Employs reinforcement-like list-order learning without neural network overhead. The algorithm rewards and penalizes heuristic sequencing rules based on tour quality across simulated cycles.
+  * **Precedence Constraints:** Naturally handles domain dependencies (e.g., "harvest grain before visiting flour mill", "take basket before gathering eggs") without falling into greedy dead-ends.
+  * **Performance:** Executes in **$< 0.05\text{ ms}$** for standard NPC errand batches ($N = 4\text{--}12$ POIs).
 
-$$\Delta_{\text{dist}} = (D[u, v'] + D[u', v]) - (D[u, u'] + D[v, v'])$$
-If $\Delta_{\text{dist}} < 0$, the tour update is committed.
+#### 2. Real-Time Dynamic Re-routing: [Ripple Insertion Dynamic TSP](https://github.com/mcarbonell/ripple-insertion)
+* **When used:** Unplanned runtime interrupts, spontaneous player encounters, emergency rain shelter, item pickups, or dynamic obstacle avoidance.
+* **Mechanism:**
+  * When an NPC is mid-itinerary and suddenly acquires a new waypoint (e.g., stopping to speak with the player, or diverting to shelter), recalculating the entire TSP from scratch is computationally wasteful and disrupts temporal continuity.
+  * **Recursive Insertion with Elastic Tension Relaxation:** Slices into the active tour in $O(N \log N)$ complexity, calculating the cheapest detour and propagating a local "ripple" relaxation through adjacent vertices.
+  * **Continuity Guarantee:** Preserves the already committed downstream itinerary while seamlessly absorbing the new waypoint.
+  * **Performance:** Executes in **$0.05\text{--}0.15\text{ ms}$**, running synchronously inside the 60 FPS Pygame/Arcade update loop without causing frame drops.
 
 ---
 

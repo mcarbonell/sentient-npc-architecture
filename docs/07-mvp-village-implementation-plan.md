@@ -56,7 +56,7 @@ To iterate rapidly with minimal compilation friction:
 | **2D Engine / Rendering** | **Pygame-CE** or **Arcade** | Direct 2D rendering, simple sprites, rock-solid 60 FPS event loop. |
 | **Simulation & State** | **Lightweight ECS (esper / custom) + SQLite** | Data-oriented design for biological drives; ACID persistence for memories. |
 | **SLM Inference Engine** | **`llama-cpp-python` / Local Ollama** | Hardware-accelerated local execution of **Qwen 2.5 0.5B / 1.5B (GGUF 4-bit)**. |
-| **Navigation** | **Grid $A^*$ + 2-opt TSP** | Fast, deterministic grid pathfinding and optimal errand sequence solving. |
+| **Navigation** | **Grid $A^*$ + [k-Alternatives](https://github.com/mcarbonell/k-alternatives-meta-algorithm) & [Ripple Insertion](https://github.com/mcarbonell/ripple-insertion) TSP** | Deterministic grid pathfinding, adaptive errand itinerary optimization, and sub-millisecond dynamic re-routing upon interrupts. |
 
 ---
 
@@ -72,7 +72,7 @@ Below is an engineering comparison of estimated development time between **Tradi
 | **1.1 Environment & Tilemap** | 2D tile renderer (grass, cobblestones, POI structural walls). | 6 hours | 1.5 hours |
 | **1.2 ECS Needs Components** | Structs for Hunger, Energy, and Fun with continuous decay and utility curves. | 8 hours | 2.0 hours |
 | **1.3 $A^*$ Pathfinding & Routines** | Grid navigation enabling transit between POIs based on schedule time. | 10 hours | 2.5 hours |
-| **1.4 2-opt TSP Optimizer** | Heuristic sequencer for ordering 3-4 daily errands along the shortest route. | 6 hours | 1.5 hours |
+| **1.4 k-Alternatives & Ripple Insertion TSP** | Dual optimizer: k-Alternatives for multi-errand daily itineraries and Ripple Insertion for sub-millisecond route interrupts. | 6 hours | 1.5 hours |
 | **Phase 1 Subtotal** | | **30 hours** | **7.5 hours** |
 
 ---
@@ -161,7 +161,7 @@ sentient-npc-architecture/
 │   │   └── event_bus.py              # Central event publication bus
 │   ├── simulation/
 │   │   ├── needs.py                  # Physiological drive decay & utility curves
-│   │   ├── navigation.py             # A* pathfinding and 2-opt TSP
+│   │   ├── navigation.py             # A* pathfinding, k-Alternatives & Ripple Insertion TSP
 │   │   └── social_graph.py           # Asymmetric graph & rumor dissemination
 │   ├── ai/
 │   │   ├── slm_worker.py             # Asynchronous inference thread (llama.cpp)
