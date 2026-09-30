@@ -167,3 +167,4 @@ During a Mental Break:
 * The Executive Layer (routine schedule) is **completely suspended**.
 * The NPC obsessively executes the breakdown compulsion for several in-game hours.
 * If spoken to, the SLM emits incoherent rambling, shouting, or delirium reflecting the crisis.
+

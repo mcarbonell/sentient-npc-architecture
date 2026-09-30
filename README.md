@@ -80,3 +80,33 @@ The complete architectural specification is organized into dedicated technical d
    * **LOD 2 (> 100m / Entire town):** Pure statistical and mathematical simulation. No 3D meshes or collision queries; NPCs traverse the world as time pointers across their agenda graphs.
 3. **Asynchronous LLM Decoupling:** The game engine **never waits** on language model inference. Requests enter a thread-safe priority queue serviced by a background inference worker.
 4. **Local Quantized SLMs:** Tailored for ultra-optimized Small Language Models (0.5B to 3B parameters such as Qwen 2.5 or Llama 3.2 at 4-bit quantization) run locally via NPU, DirectML, or CPU AVX2—eliminating cloud server dependencies and per-token API costs.
+---
+
+## 🏷️ Repository Metadata
+
+* **Repository Name:** `sentient-npc-architecture`
+* **Short Description:** *A modular, open-source blueprint for sentient-grade NPC cognition, integrating long-term memory, emotional simulation, and autonomous goal-oriented behavior for the next generation of video game NPCs.*
+* **Current Documentation Stage:** `Draft v0.9` (Ready for 2D Village Prototype Implementation)
+* **Target Implementation Platforms:** Godot 4 (with optional Rust/Llama bindings for local AI)
+* **Primary Topics / Tags:**  
+  `ai` `autonomous-agents` `character-ai` `decision-making` `emotional-intelligence` `gaming` `godot` `large-language-models` `memory-systems` `neural-architecture` `npc` `procedural-generation` `psychology` `simulation` `utility-ai`
+
+---
+
+## 📜 Citation & Authorship
+
+**Mario Raúl Carbonell Martínez**  
+*Valencia, Spain · 2026*  
+Project SNA: *Sentient NPC Architecture*
+
+If you use or reference this architectural blueprint in academic, game development, or research contexts, please cite it as:
+
+```bibtex
+@software{carbonell2026sentient,
+  author = {Carbonell Martínez, Mario Raúl},
+  title = {Sentient NPC Architecture (SNA): Autonomous Agent Architecture with Hybrid Cognition, Systemic Simulation, and Behavioral LOD},
+  year = {2026},
+  publisher = {GitHub},
+  url = {https://github.com/mcarbonell/sentient-npc-architecture}
+}
+```
